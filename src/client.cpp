@@ -50,7 +50,7 @@ Response Client::sendRequest(uint8_t method, const std::string &endpoint) {
         return parseHttpResponse(response);
 
     } catch (const std::exception &e) {
-        // std::cerr << "Exception in sendRequest: " << e.what() << std::endl;
+        std::cerr << "Exception in sendRequest: " << e.what() << std::endl;
         return Response{"", "", 0};
     }
 }
@@ -192,7 +192,7 @@ uint16_t Client::getDeviceStatus(const std::string &token) {
 
     Response response = sendRequest(GET, endpoint);
     if (response.statusCode == 0)
-        return 0;
+        return UINT16_MAX;
     if (!response.body.empty()) {
         std::string statusStr = extractValue(response.body, "devStatus");
         if (!statusStr.empty()) {
@@ -229,10 +229,10 @@ uint16_t Client::createVirtualPin(const std::string &token, const std::string &p
     std::string endpoint = "/devices";
     endpoint += '/' + token;
     endpoint += "/pins";
+    endpoint += CREATE_PIN;
     endpoint += '/' + pinNumber;
     endpoint += '/' + dataType;
     endpoint += '/' + defaultData;
-    endpoint += CREATE_PIN;
 
     return sendRequest(POST, endpoint).statusCode;
 }
@@ -242,9 +242,9 @@ uint16_t Client::writeVirtualPin(const std::string &token, const std::string &pi
     std::string endpoint = "/devices";
     endpoint += '/' + token;
     endpoint += "/pins";
+    endpoint += UPDATE_PIN;
     endpoint += '/' + pinNumber;
     endpoint += '/' + value;
-    endpoint += UPDATE_PIN;
 
     return sendRequest(PUT, endpoint).statusCode;
 }
@@ -253,8 +253,8 @@ uint16_t Client::deleteVirtualPin(const std::string &token, const std::string &p
     std::string endpoint = "/devices";
     endpoint += '/' + token;
     endpoint += "/pins";
-    endpoint += '/' + pinNumber;
     endpoint += DELETE_PIN;
+    endpoint += '/' + pinNumber;
 
     return sendRequest(DELETE, endpoint).statusCode;
 }
@@ -263,8 +263,8 @@ std::string Client::getVirtualPin(const std::string &token, const std::string &p
     std::string endpoint = "/devices";
     endpoint += '/' + token;
     endpoint += "/pins";
-    endpoint += '/' + pinNumber;
     endpoint += GET_PIN;
+    endpoint += '/' + pinNumber;
 
     Response response = sendRequest(GET, endpoint);
     return extractValue(response.body, "PinValue");

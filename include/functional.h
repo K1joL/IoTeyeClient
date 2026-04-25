@@ -36,14 +36,6 @@ namespace ioteye::client::debug {
 #ifdef ENABLE_CLIENT_LOGGING
 static std::mutex logMutex;
 
-template <typename... Args>
-inline void log(Args&&... args) {
-    std::lock_guard<std::mutex> lock(logMutex);
-    std::ostringstream oss;
-    (oss << ... << std::forward<Args>(args));
-    std::cout << "LOG: " << oss.str() << std::endl;
-}
-
 // << operator overload specifically for std::unordered_map
 template <typename K, typename V>
 std::ostream& operator<<(std::ostream& os,
@@ -60,11 +52,17 @@ std::ostream& operator<<(std::ostream& os,
     return os;
 }
 
+template <typename... Args>
+inline void log(Args&&... args) {
+    std::lock_guard<std::mutex> lock(logMutex);
+    std::ostringstream oss;
+    (oss << ... << std::forward<Args>(args));
+    std::cout << "LOG: " << oss.str() << std::endl;
+}
+
 #else
 template <typename... Args>
-inline void log(Args &&...args) {
-    // Dummy code to prevent unused parameter warning
-    (void)std::initializer_list<int>{(std::forward<Args>(args), 0)...};
+inline void log(Args &&.../* args */) {
 }
 #endif
 

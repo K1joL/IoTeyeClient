@@ -23,17 +23,18 @@
 
 #include "client.hpp"
 
-bool isPinNumberValid(std::string &number) {
+bool isPinNumberValid(std::string& number) {
     int pinNumber = 0;
     try {
         pinNumber = stoi(number);
-    } catch (const std::invalid_argument &e) {
+    } catch (const std::invalid_argument& e) {
         std::cerr << "Invalid argument: " << e.what() << std::endl;
         return false;
     }
     return (pinNumber < 256 && pinNumber > 0);
 }
-bool isPinTypeValid(std::string &type) {
+
+bool isPinTypeValid(std::string& type) {
     return type == "string" || type == "str" || type == "s" || type == "int" ||
            type == "i" || type == "double" || type == "d";
 }
@@ -98,23 +99,23 @@ int main() {
                     break;
                 }
                 codeResult = ioteye.getDeviceStatus(token);
-                if (codeResult < 3)
-                    switch (codeResult) {
-                        case 0:
-                            std::cout << "Device is online" << std::endl;
-                            break;
-                        case 1:
-                            std::cout << "Device is offline" << std::endl;
-                            break;
-                        case 2:
-                            std::cout << "Device data is out of date"
-                                      << std::endl;
-                            break;
-                        default:
-                            break;
-                    }
-                else
-                    std::cout << "Error getting device status" << std::endl;
+                switch (codeResult) {
+                    case 0:
+                        std::cout << "Device is online" << std::endl;
+                        break;
+                    case 1:
+                        std::cout << "Device is offline" << std::endl;
+                        break;
+                    case 2:
+                        std::cout << "Device data is out of date" << std::endl;
+                        break;
+                    case 3:
+                        std::cout << "Device data is dead" << std::endl;
+                        break;
+                    default:
+                        std::cout << "Error getting device status" << std::endl;
+                        break;
+                }
 
                 break;
             case '5':  // Create a virtual pin on the IoTeye API
