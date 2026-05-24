@@ -28,6 +28,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+option(IOTEYE_USE_BOOST_ASIO "Use Boost.Asio instead of standalone Asio" OFF)
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
 endif()
@@ -45,13 +47,51 @@ set(SRC_LIST
 )
 
 # --- Find Dependencies ---
-find_package(asio REQUIRED)
+if(IOTEYE_USE_BOOST_ASIO)
+    message(STATUS "${PROJECT_NAME}: Using Boost.Asio")
+    find_package(Boost REQUIRED)
+else()
+    message(STATUS "${PROJECT_NAME}: Using standalone Asio")
+    find_package(asio REQUIRED)
+endif()
+
+include(FetchContent)
+find_package(ioteyeserver QUIET)
+if(NOT ioteyeserver_FOUND)
+    if(FETCH_LIBIOTEYESERVER)
+        message(STATUS "ioteyeserver not found, fetching from GitHub")
+        set(IOTEYE_USE_BOOST_ASIO ON CACHE BOOL "Use Boost.Asio instead of standalone asio" FORCE)
+        FetchContent_Declare(ioteyeserver
+            GIT_REPOSITORY https://github.com/K1joL/IoTeyeHttpServer.git
+            GIT_TAG develop
+        )
+        FetchContent_MakeAvailable(ioteyeserver)
+        if(TARGET ioteyeserver AND NOT TARGET ioteyeserver::ioteyeserver)
+            add_library(ioteyeserver::ioteyeserver ALIAS ioteyeserver)
+        endif()
+    else()
+        message(FATAL_ERROR "ioteyeserver not found! Install it yourself or use -DFETCH_LIBIOTEYESERVER=ON to fetch it automatically.")
+    endif()
+else()
+    message(STATUS "Found local ioteyeserver installation.")
+endif()
 
 add_executable(${PROJECT_NAME} client_main.cpp ${SRC_LIST})
-target_link_libraries(${PROJECT_NAME} PRIVATE ioteyeserver asio::asio)
+
+# Conditionally link and add compile definitions
+if(IOTEYE_USE_BOOST_ASIO)
+    # Modern CMake provides Boost::headers for header-only boost libraries
+    target_link_libraries(${PROJECT_NAME} PUBLIC Boost::headers)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC IOTEYE_USE_BOOST_ASIO)
+else()
+    target_link_libraries(${PROJECT_NAME} PUBLIC asio::asio)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ioteyeserver)
 
 if(IOTEYE_CLIENT_ENABLE_TESTS)
-    message(STATUS "Client tests compilation is ON!")  
+    message(STATUS "Client tests compilation is ON!")
     add_executable(client_test tests/performance_test.cpp ${SRC_LIST})
     target_link_libraries(client_test PRIVATE ioteyeserver asio::asio)
 endif()
